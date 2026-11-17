@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.training.dal.mysql.trainingexperience.TrainingExperienceMapper">
+
+    <resultMap id="TrainingExperienceResultMap" type="cn.iocoder.yudao.module.training.dal.dataobject.trainingexperience.TrainingExperienceDO">
+        <result property="fileList" column="fileList" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
+    <!-- 定义培训经历基础字段 -->
+    <sql id="trainingExperienceFields">
+        te.id, te.user_id, te.process_instance_id, te.training_theme,
+        te.training_time, te.training_location, te.training_duration,
+        te.achieve_results, te.training_teachers, te.remark,
+    </sql>
+
+    <!-- 定义文件附件字段 -->
+    <sql id="fileUploadFields">
+        fu.id as file_id, fu.biz_id as file_biz_id, fu.file_name,
+        fu.file_size, fu.file_url, fu.file_absolute_url, fu.remark as file_remark
+    </sql>
+
+    <select id="selectPageWithFileCount" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT t.id)
+        FROM efvs_training_experience t
+        INNER  JOIN efvs_file_upload f ON t.id = f.biz_id
+        INNER JOIN system_users u ON u.id = t.user_id
+        WHERE t.deleted = 0 and f.deleted = 0 and f.biz_id IS NOT NULL and t.tenant_id = #{param2} and f.tenant_id = #{param2}
+        <if test="param3 != null and param3 != ''">
+            AND t.user_id = #{param3}
+        </if>
+        <if test="param1.trainingTheme != null and param1.trainingTheme != ''">
+            AND t.training_theme LIKE CONCAT('%', #{param1.trainingTheme}, '%')
+        </if>
+        <if test="param1.trainingTime != null and param1.trainingTime.begin != null and param1.trainingTime.end != null">
+            AND t.training_time BETWEEN #{param1.trainingTime.begin} AND #{param1.trainingTime.end}
+        </if>
+        <if test="param1.trainingLocation != null and param1.trainingLocation != ''">
+            AND t.training_location LIKE CONCAT('%', #{param1.trainingLocation}, '%')
+        </if>
+        <if test="param1.achieveResults != null and param1.achieveResults != ''">
+            AND t.achieve_results = #{param1.achieveResults}
+        </if>
+        <if test="param1.trainingTeachers != null and param1.trainingTeachers != ''">
+            AND t.training_teachers = #{param1.trainingTeachers}
+        </if>
+    </select>
+
+    <select id="selectPageWithFile"
+            resultType="cn.iocoder.yudao.module.training.dal.dataobject.trainingexperience.TrainingExperienceDO" resultMap="TrainingExperienceResultMap">
+        SELECT
+        te.id,
+        te.user_id,
+        te.process_instance_id,
+        te.training_theme,
+        te.training_time,
+        te.training_location,
+        te.training_duration,
+        te.achieve_results,
+        te.training_teachers,
+        te.remark,
+        IFNULL(JSON_ARRAYAGG(
+        JSON_OBJECT(
+        'id', fu.id,
+        'bizId', fu.biz_id,
+        'fileName', fu.file_name,
+        'fileSize', fu.file_size,
+        'fileUrl', fu.file_url,
+        'fileAbsoluteUrl', fu.file_absolute_url,
+        'remark', fu.remark
+        )
+        ), JSON_ARRAY()) AS fileList
+        FROM efvs_training_experience te
+        INNER JOIN efvs_file_upload fu ON te.id = fu.biz_id
+        INNER JOIN system_users u ON u.id = te.user_id
+        WHERE fu.biz_id IS NOT NULL
+        AND fu.deleted = 0
+        AND fu.tenant_id = #{param4}
+        AND te.deleted = 0
+        AND te.tenant_id = #{param4}
+        <if test="param5 != null and param5 != ''">
+            AND te.user_id = #{param5}
+        </if>
+        <if test="param1.trainingTheme != null and param1.trainingTheme != ''">
+            AND te.training_theme LIKE CONCAT('%', #{param1}, '%')
+        </if>
+        <if test="param1.trainingTime != null and param1.trainingTime.begin != null and param1.trainingTime.end != null">
+            AND te.training_time BETWEEN #{param1.trainingTime.begin} AND #{param1.trainingTime.end}
+        </if>
+        <if test="param1.trainingLocation != null and param1.trainingLocation != ''">
+            AND te.training_location LIKE CONCAT('%', #{param1.trainingLocation}, '%')
+        </if>
+        <if test="param1.achieveResults != null and param1.achieveResults != ''">
+            AND te.achieve_results = #{param1.achieveResults}
+        </if>
+        <if test="param1.trainingTeachers != null and param1.trainingTeachers != ''">
+            AND te.training_teachers = #{param1.trainingTeachers}
+        </if>
+        GROUP BY te.id, te.user_id, te.process_instance_id, te.training_theme,
+        te.training_time, te.training_location, te.training_duration,
+        te.achieve_results, te.training_teachers, te.remark
+        ORDER BY te.id DESC
+        LIMIT #{param2}, #{param3}
+    </select>
+    <select id="selectByIdAndTenantId"
+            resultType="cn.iocoder.yudao.module.training.dal.dataobject.trainingexperience.TrainingExperienceDO">
+        SELECT t.*, f.file_name as name, f.file_url as fileUrl,f.id as fileId,f.file_size as size
+        FROM efvs_training_experience t
+        LEFT JOIN efvs_file_upload f ON t.id = f.biz_id
+        WHERE t.id = #{param1} and t.deleted = 0 and t.tenant_id = #{param2}
+    </select>
+    <select id="selectBytrainingId"
+            resultType="cn.iocoder.yudao.module.training.dal.dataobject.trainingexperience.TrainingExperienceDO">
+    select
+        te.id, te.user_id, te.process_instance_id, te.training_theme,
+        te.training_time, te.training_location, te.training_duration,
+        te.achieve_results, te.training_teachers, te.remark
+    from efvs_training_experience te where te.id = #{param1}
+    </select>
+</mapper>

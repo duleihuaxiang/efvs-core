@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.iocoder.yudao.module.data.dal.mysql.docdirectory.DocDirectoryMapper">
+    <!-- 查询所有目录 -->
+    <select id="selectAll" resultType="cn.iocoder.yudao.module.data.dal.dataobject.docdirectory.DocDirectoryDO">
+        SELECT
+            Id as id,
+            name,
+            parent_id,
+            level,
+            creator,
+            updater,
+            create_time,
+            update_time,
+            remark,
+            tenant_id
+        FROM efvs_doc_directory
+        ORDER BY parent_id, Id
+    </select>
+
+    <!-- 根据ID查询目录 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultType="cn.iocoder.yudao.module.data.dal.dataobject.docdirectory.DocDirectoryDO">
+        SELECT
+             id,
+            level  -- 仅需查询层级用于计算子目录层级
+        FROM efvs_doc_directory
+        WHERE id = #{id}
+    </select>
+
+    <!-- 新增目录 -->
+    <insert id="insertdocDirectory" parameterType="cn.iocoder.yudao.module.data.dal.dataobject.docdirectory.DocDirectoryDO">
+        INSERT INTO efvs_doc_directory (
+            name,
+            parent_id,
+            level,
+            remark,
+            creator,
+            updater,
+            create_time,
+            update_time
+        ) VALUES (
+                     #{name},
+                     #{parentId},
+                     #{level},
+                     #{remark},
+                    #{creator},
+                    #{updater},
+                    #{createTime},
+                    #{updateTime}
+                 )
+    </insert>
+
+    <select id="selectChildren" resultType="cn.iocoder.yudao.module.data.dal.dataobject.docdirectory.DocDirectoryDO">
+        SELECT
+            id,
+            name,
+            parent_id,
+            level,
+            creator,
+            updater,
+            create_time,
+            update_time,
+            remark,
+            tenant_id
+        FROM efvs_doc_directory
+        WHERE parent_id = #{parentId} AND deleted = 0
+    </select>
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        UPDATE efvs_doc_directory
+        SET deleted = 1
+        WHERE id = #{id}
+    </delete>
+</mapper>

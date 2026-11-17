@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.training.dal.mysql.trainingexperience.FileUploadMapper">
+
+    <!--
+        一般情况下，尽可能使用 Mapper 进行 CRUD 增删改查即可。
+        无法满足的场景，例如说多表关联查询，才使用 XML 编写 SQL。
+        代码生成器暂时只生成 Mapper XML 文件本身，更多推荐 MybatisX 快速开发插件来生成查询。
+        文档可见：https://www.iocoder.cn/MyBatis/x-plugins/
+     -->
+    <!-- 定义培训经历基础字段 -->
+    <resultMap id="fileConfigResultMap" type="cn.iocoder.yudao.module.infra.dal.dataobject.file.FileConfigDO" autoMapping="true">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="storage" property="storage"/>
+        <result column="remark" property="remark"/>
+        <result column="master" property="master"/>
+        <!-- 关键：显式指定 typeHandler -->
+        <result column="config" property="config" typeHandler="cn.iocoder.yudao.module.infra.dal.dataobject.file.FileConfigDO$FileClientConfigTypeHandler"/>
+    </resultMap>
+    <sql id="trainingExperienceFields">
+        te.id, te.user_id, te.process_instance_id, te.training_theme,
+        te.training_time, te.training_location, te.training_duration,
+        te.achieve_results, te.training_teachers, te.remark
+    </sql>
+
+    <!-- 定义文件附件字段 -->
+    <sql id="fileUploadFields">
+        fu.id , fu.biz_id , fu.file_name,
+        fu.file_size, fu.file_url, fu.file_absolute_url, fu.file_preview_path, fu.remark, fu.type_name
+    </sql>
+
+    <insert id="insertBatchSomeColumn">
+        INSERT INTO efvs_file_upload (
+
+                                          file_Name,
+                                          file_Size,
+                                          file_Url,
+                                          file_Absolute_Url,
+                                          remark
+                                        ) VALUES
+        <foreach item="item" index="index" collection="list" separator=",">
+            (
+
+            #{item.fileName},
+            #{item.fileSize},
+            #{item.fileUrl},
+            #{item.fileAbsoluteUrl},
+            #{item.remark}
+            )
+        </foreach>
+    </insert>
+    <update id="updateByidByTenantId">
+        UPDATE efvs_file_upload
+        SET biz_id = #{trainingId}
+        WHERE id IN
+        <foreach collection="zipId" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+          and deleted = 0 and tenant_id = #{tenantId}
+    </update>
+    <update id="updateByexperienceIdByTenantId">
+        UPDATE efvs_training_experience
+        SET user_id = #{param2}
+        WHERE id = #{param1} and deleted = 0 and tenant_id = #{param3}
+    </update>
+    <update id="updateByfileId">
+        UPDATE efvs_file_upload
+        SET
+        <if test="param1.fileName != null">
+            file_Name = #{param1.fileName},
+        </if>
+        <if test="param1.fileSize != null">
+            file_Size = #{param1.fileSize},
+        </if>
+        <if test="param1.fileUrl != null">
+            file_Url = #{param1.fileUrl},
+        </if>
+            <if test="param1.fileAbsoluteUrl != null">
+            file_Absolute_Url = #{param1.fileAbsoluteUrl}
+        </if>
+        WHERE id = #{param2} and deleted = 0
+    </update>
+
+    <select id="selectNameById" resultType="java.lang.String">
+        SELECT file_Name from efvs_file_upload where id = #{id}
+    </select>
+    <select id="selectByfileId" resultType="java.lang.Boolean">
+        SELECT EXISTS(SELECT 1 FROM efvs_file_upload WHERE id = #{param1})
+    </select>
+    <select id="selectListByBizId"
+            resultType="cn.iocoder.yudao.module.training.dal.dataobject.trainingexperience.FileUploadDO">
+        SELECT
+        <include refid="fileUploadFields"/>
+        FROM efvs_file_upload fu  WHERE fu.biz_id = #{param1} and fu.deleted = 0 and fu.tenant_id = #{param2}
+    </select>
+    <select id="selectListBytrainingMaterialsIds"
+            resultType="cn.iocoder.yudao.module.training.dal.dataobject.trainingexperience.FileUploadDO">
+        SELECT
+        <include refid="fileUploadFields"/>
+        FROM efvs_file_upload fu  WHERE fu.biz_id IN
+        <foreach item="id" index="index" collection="trainingMaterialsIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and fu.deleted = 0 and fu.tenant_id = #{tenantId}
+    </select>
+    <select id="selectListByFileUploadIds"
+            resultType="cn.iocoder.yudao.module.training.dal.dataobject.trainingexperience.FileUploadDO">
+        SELECT
+        <include refid="fileUploadFields"/>
+        FROM efvs_file_upload fu
+        <where>
+            fu.deleted = 0
+            <if test="fileUploadIds != null and fileUploadIds.size() > 0">
+                AND fu.id IN
+                <foreach item="id" collection="fileUploadIds" separator="," open="(" close=")">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="selectListByIds"
+            resultType="cn.iocoder.yudao.module.training.dal.dataobject.trainingexperience.FileUploadDO">
+        SELECT
+        <include refid="fileUploadFields"/>
+        FROM efvs_file_upload fu
+        <where>
+            fu.deleted = 0
+            <if test="allFileUploadIds != null and allFileUploadIds.size() > 0">
+                AND fu.id IN
+                <foreach item="id" collection="allFileUploadIds" separator="," open="(" close=")">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="selectFileConfig" resultMap="fileConfigResultMap">
+        select * from infra_file_config where master = 1 and deleted = 0
+    </select>
+    <update id="deleteByBizIdAndTenantId">
+        UPDATE efvs_file_upload
+        SET deleted = 1
+        WHERE biz_id = #{bizId}
+          AND tenant_id = #{tenantId}
+          AND deleted = 0
+    </update>
+    <update id="deleteByBizIdsAndTenantId">
+        UPDATE efvs_file_upload
+        SET deleted = 1
+        WHERE biz_id IN
+        <foreach collection="bizIds" item="bizId" open="(" separator="," close=")">
+            #{bizId}
+        </foreach>
+        AND tenant_id = #{tenantId}
+    </update>
+
+
+</mapper>

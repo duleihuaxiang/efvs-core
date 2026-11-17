@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.data.dal.mysql.productbom.ProductBomMapper">
+
+    <!--
+        一般情况下，尽可能使用 Mapper 进行 CRUD 增删改查即可。
+        无法满足的场景，例如说多表关联查询，才使用 XML 编写 SQL。
+        代码生成器暂时只生成 Mapper XML 文件本身，更多推荐 MybatisX 快速开发插件来生成查询。
+        文档可见：https://www.iocoder.cn/MyBatis/x-plugins/
+     -->
+
+    <select id="selectProduct"
+            resultType="cn.iocoder.yudao.module.data.dal.dataobject.productbom.ProductBomDO">
+        SELECT * FROM efvs_product_bom where deleted = 0 and tenant_id = #{tenantId} AND product_part_number = #{partNumber} and level != 0
+    </select>
+    <select id="selectBOMList"
+            resultType="cn.iocoder.yudao.module.data.controller.admin.productbom.vo.ProductBomRespVO">
+        SELECT id,
+               pmn,
+               level,
+               name,
+               part_number,
+               product_part_number,
+               product_version,
+               product_type,
+               product_num,
+               unit,
+               remark,
+               tag_number,
+               subcategory,
+               drawing_number,
+               category,
+               small_subcategory
+        FROM efvs_product_bom where deleted = 0 and tenant_id = #{tenantId}
+    </select>
+
+    <select id="selectBOMDetailList"
+            resultType="cn.iocoder.yudao.module.data.controller.admin.productbom.vo.ProductBomRespVO">
+        SELECT id,
+               pmn,
+               level,
+               name,
+               part_number,
+               product_part_number,
+               product_version,
+               product_type,
+               product_num,
+               unit,
+               remark,
+               tag_number,
+               subcategory,
+               drawing_number,
+               category,
+               small_subcategory
+        FROM efvs_product_bom
+        WHERE deleted = 0
+          AND tenant_id = #{tenantId}
+          AND product_part_number = #{productPartNumber}
+        <if test="name != null and name != ''">
+            AND name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        <if test="partNumber != null and partNumber != ''">
+            AND part_number = #{partNumber}
+        </if>
+        <if test="productVersion != null and productVersion != ''">
+            AND product_version = #{productVersion}
+        </if>
+        <if test="productType != null">
+            AND product_type = #{productType}
+        </if>
+        ORDER BY id ASC
+    </select>
+</mapper>
